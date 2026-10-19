@@ -1,4 +1,4 @@
-/** @param {import('./types').ServiceSettings} settings */
+import { tr } from './i18n.mjs'
 export function settingsDraft(settings) {
   return {
     enabled: settings.enabled,
@@ -33,13 +33,13 @@ export function validateSettingsDraft(draft) {
   /** @type {Partial<Record<'defaultMaxTokens' | 'probeIntervalMinutes', string>>} */
   const errors = {}
   for (const [key, label, min, max] of [
-    ['defaultMaxTokens', '最大输出 Token', 512, 131072],
-    ['probeIntervalMinutes', '刷新间隔', 1, 1440],
+    ['defaultMaxTokens', tr("最大输出 Token"), 512, 131072],
+    ['probeIntervalMinutes', tr("刷新间隔"), 1, 1440],
   ]) {
     const raw = draft[key].trim()
     const value = Number(raw)
     if (!raw || !Number.isInteger(value) || value < min || value > max) {
-      errors[key] = `${label}必须是 ${min}–${max} 的整数。`
+      errors[key] = tr("{0}必须是 {1}–{2} 的整数。", label, min, max)
     }
   }
   return {

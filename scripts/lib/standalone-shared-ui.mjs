@@ -1,6 +1,7 @@
 /** 仅转换独立端承载；渠道业务仍来自原插件页面。 */
 import fs from 'node:fs'
 import vm from 'node:vm'
+import { fileURLToPath } from 'node:url'
 let source = fs.readFileSync(new URL('../../client.js', import.meta.url), 'utf8')
 function replaceOnce(from, to) {
   if (source.split(from).length !== 2) throw new Error(`共享页面替换位置改变：${from.slice(0, 90)}`)
@@ -22,6 +23,22 @@ replaceOnce("'chan.sub': '把各家的免费额度接进来：登录一次，模
 let record
 vm.runInNewContext(source, { window: { __ModuleLoader__: { load: value => { record = value } } } })
 const shared = record.factory(() => ({})).standalone
+const providerEnglish = {
+  codearts: ['CodeArts', 'Huawei Cloud', 'DeepSeek · GLM · openPangu, daily free quota'],
+  buddy: ['WorkBuddy China', 'Tencent · copilot.tencent.com', 'Same endpoint as CodeBuddy: DeepSeek · Kimi · GLM free tier, daily credits'],
+  workbuddy: ['WorkBuddy International', 'Tencent · workbuddy.ai', 'International endpoint with separate accounts and credits'],
+  lobsterai: ['LobsterAI', 'Youdao', 'Daily check-in credits'],
+  qoder: ['Qoder', 'Alibaba', '100 daily credits, encrypted inference endpoint'],
+  qodercn: ['Qoder China', 'Alibaba', 'China endpoint and model pool'],
+  trae: ['TRAE', 'ByteDance', 'Phone number login'],
+  cline: ['Cline', 'Cline', 'Free quota for Cline accounts'],
+  loomy: ['Loomy', 'iFlytek', 'Scan with WeChat, or use an SMS verification code'],
+  raccoon: ['Raccoon', 'SenseTime', 'Phone number login'],
+  minimax: ['MiniMax Code', 'MiniMax', 'Device code + PKCE, daily check-in'],
+  zcode: ['ZCode', 'Zhipu', 'Browser login (requires a local browser)'],
+  gemini: ['Gemini', 'Google Code Assist', 'Free tier with local OAuth callback'],
+}
+const languageModule = fileURLToPath(new URL('../../packages/standalone/frontend/i18n.mjs', import.meta.url))
 const css = shared.CSS + `
 .ofm_root{
  max-width:none;
@@ -39,9 +56,19 @@ export function standaloneSharedUi() {
       if (id === 'ofm-shared-styles.css') return '\0' + id
     },
     load(id) {
-      if (id === '\0ofm-shared-client') return `import * as React from 'react'; export const shared = (${record.factory.toString()})(() => React).standalone;`
+      if (id === '\0ofm-shared-client') return `import * as React from 'react';
+        import { language } from ${JSON.stringify(languageModule)};
+        export const shared = (${record.factory.toString()})(() => React).standalone;
+        if (language === 'en') {
+          const names = ${JSON.stringify(providerEnglish)};
+          for (const provider of shared.CHANNEL_PROVIDERS) {
+            const [name, org, note] = names[provider.id]; Object.assign(provider, { name, org, note });
+          }
+          shared.DICT.en['chan.sub'] = 'Connect provider accounts to access free quotas through one API. Credentials stay on this computer; exported backups contain credentials.';
+          shared.DICT.en['tag.hot'] = 'HOT';
+        }`
       if (id === '\0ofm-shared-styles.css') return css
-      if (id === '\0ofm-provider-list') return `export const providers = ${JSON.stringify(shared.CHANNEL_PROVIDERS)}`
+      if (id === '\0ofm-provider-list') return `import { shared } from 'ofm-shared-client'; export const providers = shared.CHANNEL_PROVIDERS;`
     },
   }
 }

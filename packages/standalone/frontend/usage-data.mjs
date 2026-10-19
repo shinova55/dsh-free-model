@@ -1,3 +1,4 @@
+import { locale } from './i18n.mjs'
 /** 日趋势使用本地自然日；累计指标始终由服务端累计字段提供。 */
 export function usageDays(series, count = 14, now = new Date()) {
   const values = new Map(series.map(row => [row.day, row.total]))
@@ -15,7 +16,7 @@ export function usageDays(series, count = 14, now = new Date()) {
 export function usageModels(models, { search = '', sort = 'calls', page = 1 } = {}) {
   const query = search.trim().toLocaleLowerCase()
   const matches = models.filter(row => `${row.name} ${row.model}`.toLocaleLowerCase().includes(query))
-  const tie = (a, b) => a.name.localeCompare(b.name, 'zh-CN') || a.model.localeCompare(b.model)
+  const tie = (a, b) => a.name.localeCompare(b.name, locale) || a.model.localeCompare(b.model)
   matches.sort((a, b) => {
     if (sort === 'name') return tie(a, b)
     const value = row => sort === 'tokens' ? row.input + row.output : sort === 'failedTurns' ? row.failedTurns : row.calls

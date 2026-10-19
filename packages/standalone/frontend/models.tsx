@@ -1,3 +1,4 @@
+import { tr, locale } from './i18n.mjs'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { defaultRangeExtractor, useVirtualizer, type Range } from '@tanstack/react-virtual'
 import { Boxes, Check, CircleAlert, CircleCheck, Copy, Eye, EyeOff, LoaderCircle, Play, RefreshCw, Search, SlidersHorizontal, Square, X } from 'lucide-react'
@@ -9,15 +10,15 @@ import type { Host, Model, ModelTestResult, ServiceSettings, Summary } from './t
 import './models.css'
 
 const availabilityNames: Record<string, string> = {
-  available: '已探测可用', listed: '清单已收录', unknown: '未探测',
-  unavailable: '不可用', throttled: '限流中', 'region-blocked': '地区受限',
+  available: tr("已探测可用"), listed: tr("清单已收录"), unknown: tr("未探测"),
+  unavailable: tr("不可用"), throttled: tr("限流中"), 'region-blocked': tr("地区受限"),
 }
-const sourceNames: Record<string, string> = { anonymous: '匿名模型', kilo: 'Kilo 免费池', eac: 'EAC 协付' }
+const sourceNames: Record<string, string> = { anonymous: tr("匿名模型"), kilo: tr("Kilo 免费池"), eac: tr("EAC 协付") }
 const channelName = (id: string) => sourceNames[id]
   ?? providers.find(provider => provider.id === id)?.name ?? id
-const number = (value: number) => new Intl.NumberFormat('zh-CN').format(value)
+const number = (value: number) => new Intl.NumberFormat(locale).format(value)
 const capacity = (value?: number) => value && Number.isFinite(value) && value > 0
-  ? value >= 1000 ? `${Number((value / 1000).toFixed(1))}K` : number(value) : '未知'
+  ? value >= 1000 ? `${Number((value / 1000).toFixed(1))}K` : number(value) : tr("未知")
 const initialFilters = { search: '', channel: 'all', capability: 'all', availability: 'all', access: 'all' }
 type Operation = 'refresh' | 'probe' | 'test'
 type TestState = { model: Model; state: 'pending' | 'success' | 'error' | 'cancelled'; result?: ModelTestResult; error?: string }
@@ -88,17 +89,17 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
           await host.refresh()
         } catch (reason) {
           if (!isCurrent()) return
-          const detail = reason instanceof Error ? reason.name === 'TimeoutError' ? '请求超时，请重试。' : reason.message : '请求失败，请重试。'
-          setError(`模型测试已成功，但刷新摘要失败：${detail}`)
+          const detail = reason instanceof Error ? reason.name === 'TimeoutError' ? tr("请求超时，请重试。") : tr(reason.message) : tr("请求失败，请重试。")
+          setError(tr("模型测试已成功，但刷新摘要失败：{0}", detail))
         }
       } else {
         await host.refreshModels(kind === 'probe', controller.signal)
         if (!isCurrent()) return
-        setMessage(kind === 'probe' ? '可用性探测已完成' : '模型清单已更新')
+        setMessage(kind === 'probe' ? tr("可用性探测已完成") : tr("模型清单已更新"))
       }
     } catch (reason) {
       if (!isCurrent()) return
-      const detail = reason instanceof Error ? reason.name === 'TimeoutError' ? '请求超时，请重试。' : reason.message : '操作失败，请重试。'
+      const detail = reason instanceof Error ? reason.name === 'TimeoutError' ? tr("请求超时，请重试。") : tr(reason.message) : tr("操作失败，请重试。")
       if (kind === 'test' && model) setTest({ model, state: 'error', error: detail })
       else setError(detail)
     } finally {
@@ -131,7 +132,7 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
       if (activeRef.current) setMessage(visibility.saved)
       try { await host.refresh() } catch (reason) { if (activeRef.current) host.error(reason as Error) }
     } catch (reason) {
-      if (activeRef.current) setError(reason instanceof Error ? reason.message : '保存失败，请重试。')
+      if (activeRef.current) setError(reason instanceof Error ? tr(reason.message) : tr("保存失败，请重试。"))
     } finally {
       visibilityPending.current = false
       setVisibilitySaving(false)
@@ -143,47 +144,47 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
   const routable = summary.catalog.filter(model => model.routable).length
   return <div className="model-browser" data-testid="models-ready">
     <header className="dashboard-heading">
-      <div><div className="heading-eyebrow">WORKSPACE / MODELS</div><h1>模型清单</h1>
-        <p>{number(summary.catalog.length)} 个模型 · {number(routable)} 个可接入</p></div>
+      <div><div className="heading-eyebrow">WORKSPACE / MODELS</div><h1>{tr("模型清单")}</h1>
+        <p>{number(summary.catalog.length)} {tr("个模型 ·")}{number(routable)} {tr("个可接入")}</p></div>
       <div className="actions">
         <Button variant="outline" disabled={!!operation} onClick={() => { void run('refresh') }}>
-          <RefreshCw size={15} className={operation === 'refresh' ? 'spinning' : ''} />{operation === 'refresh' ? '正在刷新' : '刷新清单'}
+          <RefreshCw size={15} className={operation === 'refresh' ? 'spinning' : ''} />{operation === 'refresh' ? tr("正在刷新") : tr("刷新清单")}
         </Button>
-        <Button disabled={!!operation || !summary.settings.enabled} title="会向上游发送少量推理请求"
+        <Button disabled={!!operation || !summary.settings.enabled} title={tr("会向上游发送少量推理请求")}
           onClick={() => { void run('probe') }}>
           {operation === 'probe' ? <LoaderCircle size={15} className="spinning" /> : <CircleCheck size={15} />}
-          {operation === 'probe' ? '正在探测' : '探测可用性'}
+          {operation === 'probe' ? tr("正在探测") : tr("探测可用性")}
         </Button>
       </div>
     </header>
     <div className="model-summary">
-      <span><span className={`status-dot ${summary.settings.enabled ? '' : 'paused'}`} />{summary.settings.enabled ? '推理已启用' : '推理已暂停'}</span>
-      <span>清单更新：{summary.catalogSyncedAt ? new Date(summary.catalogSyncedAt).toLocaleString('zh-CN', { hour12: false }) : '尚未刷新'}</span>
-      <span>主动探测和测试会产生推理请求</span>
+      <span><span className={`status-dot ${summary.settings.enabled ? '' : 'paused'}`} />{summary.settings.enabled ? tr("推理已启用") : tr("推理已暂停")}</span>
+      <span>{tr("清单更新：")}{summary.catalogSyncedAt ? new Date(summary.catalogSyncedAt).toLocaleString(locale, { hour12: false }) : tr("尚未刷新")}</span>
+      <span>{tr("主动探测和测试会产生推理请求")}</span>
     </div>
     {error && <div className="channel-error" role="alert"><CircleAlert size={16} /><span>{error}</span>
-      <Button variant="ghost" aria-label="关闭错误提示" title="关闭错误提示" onClick={() => setError('')}><X size={15} /></Button></div>}
+      <Button variant="ghost" aria-label={tr("关闭错误提示")} title={tr("关闭错误提示")} onClick={() => setError('')}><X size={15} /></Button></div>}
     {message && <p className="model-feedback" role="status"><Check size={15} />{message}</p>}
     <div className="model-filters">
-      <div className="model-search"><Search size={16} /><Input type="search" aria-label="搜索模型" placeholder="搜索模型名称或 ID…"
+      <div className="model-search"><Search size={16} /><Input type="search" aria-label={tr("搜索模型")} placeholder={tr("搜索模型名称或 ID…")}
         value={filters.search} onChange={event => changeFilters({ search: event.target.value })} /></div>
-      <select aria-label="筛选渠道" value={filters.channel} onChange={event => changeFilters({ channel: event.target.value })}>
-        <option value="all">全部渠道</option>{channels.map(id => <option value={id} key={id}>{channelName(id)}</option>)}
+      <select aria-label={tr("筛选渠道")} value={filters.channel} onChange={event => changeFilters({ channel: event.target.value })}>
+        <option value="all">{tr("全部渠道")}</option>{channels.map(id => <option value={id} key={id}>{channelName(id)}</option>)}
       </select>
-      <select aria-label="筛选模型能力" value={filters.capability} onChange={event => changeFilters({ capability: event.target.value })}>
-        <option value="all">全部能力</option><option value="text">纯文本</option><option value="vision">支持视觉</option><option value="reasoning">支持思考</option>
+      <select aria-label={tr("筛选模型能力")} value={filters.capability} onChange={event => changeFilters({ capability: event.target.value })}>
+        <option value="all">{tr("全部能力")}</option><option value="text">{tr("纯文本")}</option><option value="vision">{tr("支持视觉")}</option><option value="reasoning">{tr("支持思考")}</option>
       </select>
-      <select aria-label="筛选可用状态" value={filters.availability} onChange={event => changeFilters({ availability: event.target.value })}>
-        <option value="all">全部状态</option>{Object.entries(availabilityNames).map(([id, name]) => <option value={id} key={id}>{name}</option>)}
+      <select aria-label={tr("筛选可用状态")} value={filters.availability} onChange={event => changeFilters({ availability: event.target.value })}>
+        <option value="all">{tr("全部状态")}</option>{Object.entries(availabilityNames).map(([id, name]) => <option value={id} key={id}>{name}</option>)}
       </select>
     </div>
     <div className="model-list-toolbar">
-      <div className="channel-filters" role="group" aria-label="筛选公开范围">
-        {([['all', '全部模型'], ['routable', '可接入'], ['hidden', '未公开']] as const).map(([id, name]) =>
+      <div className="channel-filters" role="group" aria-label={tr("筛选公开范围")}>
+        {([['all', tr("全部模型")], ['routable', tr("可接入")], ['hidden', tr("未公开")]] as const).map(([id, name]) =>
           <button key={id} aria-pressed={filters.access === id} onClick={() => changeFilters({ access: id })}>{name}</button>)}
       </div>
-      <span role="status" data-testid="model-result-count">{number(models.length)} / {number(summary.catalog.length)} 个模型</span>
-      {filtered && <Button variant="ghost" onClick={() => changeFilters(initialFilters)}><X size={14} />清空筛选</Button>}
+      <span role="status" data-testid="model-result-count">{number(models.length)} / {number(summary.catalog.length)} {tr("个模型")}</span>
+      {filtered && <Button variant="ghost" onClick={() => changeFilters(initialFilters)}><X size={14} />{tr("清空筛选")}</Button>}
     </div>
     <div className="model-list-toolbar">
       <label><input type="checkbox" role="switch" checked={summary.settings.hideFreeModels === true}
@@ -191,20 +192,20 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
       <label><input type="checkbox" role="switch" checked={summary.settings.hideEacModels === true}
         disabled={visibilitySaving} onChange={event => { void saveVisibility({ hideEacModels: event.target.checked }) }} /> {visibility.hideEac}</label>
     </div>
-    {test && <section className={`model-test-result model-test-${test.state}`} aria-label="模型测试结果" aria-live="polite">
+    {test && <section className={`model-test-result model-test-${test.state}`} aria-label={tr("模型测试结果")} aria-live="polite">
       <div className="model-test-heading"><div><strong>
-        {test.state === 'pending' ? '正在测试' : test.state === 'success' ? '测试完成' : test.state === 'cancelled' ? '测试已取消' : '测试失败'}
+        {test.state === 'pending' ? tr("正在测试") : test.state === 'success' ? tr("测试完成") : test.state === 'cancelled' ? tr("测试已取消") : tr("测试失败")}
       </strong><span>{test.model.name}{test.result && ` · ${number(test.result.latencyMs)} ms`}</span></div>
-        {test.state === 'pending' ? <Button variant="outline" onClick={cancel}><Square size={14} />取消测试</Button>
-          : <Button variant="ghost" aria-label="关闭测试结果" title="关闭测试结果" onClick={() => setTest(undefined)}><X size={15} /></Button>}
+        {test.state === 'pending' ? <Button variant="outline" onClick={cancel}><Square size={14} />{tr("取消测试")}</Button>
+          : <Button variant="ghost" aria-label={tr("关闭测试结果")} title={tr("关闭测试结果")} onClick={() => setTest(undefined)}><X size={15} /></Button>}
       </div>
-      {test.state === 'success' && <pre>{test.result?.text || '请求已完成，上游没有返回可见正文。'}</pre>}
+      {test.state === 'success' && <pre>{test.result?.text || tr("请求已完成，上游没有返回可见正文。")}</pre>}
       {test.state === 'error' && <p>{test.error}</p>}
     </section>}
-    {models.length ? <div className="model-table" role="table" aria-label="模型清单" aria-rowcount={models.length + 1} aria-colcount={5}>
-      <div className="model-table-header" role="row"><span role="columnheader">模型 / ID</span><span role="columnheader">渠道与能力</span>
-        <span role="columnheader">上下文 / 输出</span><span role="columnheader">可用状态</span><span role="columnheader">操作</span></div>
-      <div ref={scrollRef} className="model-scroll" role="rowgroup" tabIndex={0} aria-label="滚动模型列表" onKeyDown={event => {
+    {models.length ? <div className="model-table" role="table" aria-label={tr("模型清单")} aria-rowcount={models.length + 1} aria-colcount={5}>
+      <div className="model-table-header" role="row"><span role="columnheader">{tr("模型 / ID")}</span><span role="columnheader">{tr("渠道与能力")}</span>
+        <span role="columnheader">{tr("上下文 / 输出")}</span><span role="columnheader">{tr("可用状态")}</span><span role="columnheader">{tr("操作")}</span></div>
+      <div ref={scrollRef} className="model-scroll" role="rowgroup" tabIndex={0} aria-label={tr("滚动模型列表")} onKeyDown={event => {
         if (event.target !== event.currentTarget) return
         if (event.key === 'Home' || event.key === 'End') {
           event.preventDefault()
@@ -215,7 +216,7 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
           {virtual.getVirtualItems().map(item => {
             const model = models[item.index]
             const state = model.availability ?? 'unknown'
-            const disabledReason = !summary.settings.enabled ? '推理服务已暂停' : !model.routable && !model.hiddenByUser ? '模型尚未公开，请检查渠道账号或模型设置' : operation ? '请等待当前操作完成' : ''
+            const disabledReason = !summary.settings.enabled ? tr("推理服务已暂停") : !model.routable && !model.hiddenByUser ? tr("模型尚未公开，请检查渠道账号或模型设置") : operation ? tr("请等待当前操作完成") : ''
             return <div role="row" aria-rowindex={item.index + 2} key={item.key} data-index={item.index} data-model-id={model.id}
               className="model-table-row" ref={virtual.measureElement} style={{ transform: `translateY(${item.start}px)` }}
               onFocusCapture={() => setFocusedId(model.id)} onBlurCapture={event => {
@@ -223,12 +224,12 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
               }}>
               <div role="cell" className="model-identity"><strong>{model.name}</strong><code>{model.id}</code></div>
               <div role="cell" className="model-source"><span>{channelName(model.channel)}</span><div className="model-capabilities">
-                <Badge>{model.vision ? '视觉' : '纯文本'}</Badge>{model.reasoning && <Badge tone="blue">思考</Badge>}</div></div>
-              <div role="cell" className="model-limits"><span title={model.contextWindow ? `${model.contextWindow} Token` : undefined}>{capacity(model.contextWindow)} <small>上下文</small></span>
-                <span title={model.maxOutput ? `${model.maxOutput} Token` : undefined}>{capacity(model.maxOutput)} <small>输出</small></span></div>
+                <Badge>{model.vision ? tr("视觉") : tr("纯文本")}</Badge>{model.reasoning && <Badge tone="blue">{tr("思考")}</Badge>}</div></div>
+              <div role="cell" className="model-limits"><span title={model.contextWindow ? `${model.contextWindow} Token` : undefined}>{capacity(model.contextWindow)} <small>{tr("上下文")}</small></span>
+                <span title={model.maxOutput ? `${model.maxOutput} Token` : undefined}>{capacity(model.maxOutput)} <small>{tr("输出")}</small></span></div>
               <div role="cell" className="model-state"><Badge tone={state === 'available' ? 'success' : ['unavailable', 'throttled', 'region-blocked'].includes(state) ? 'warning' : 'neutral'}>
-                {availabilityNames[state] ?? '未知状态'}</Badge>{!model.routable && <small>{model.hiddenByUser ? visibility.hidden : '未公开'}</small>}
-                {model.ttftMs != null && <small>首响应 {number(model.ttftMs)} ms</small>}</div>
+                {availabilityNames[state] ?? tr("未知状态")}</Badge>{!model.routable && <small>{model.hiddenByUser ? visibility.hidden : tr("未公开")}</small>}
+                {model.ttftMs != null && <small>{tr("首响应")}{number(model.ttftMs)} ms</small>}</div>
               <div role="cell" className="model-row-actions">
                 {['anonymous', 'kilo', 'eac', 'aggregate', 'combo'].includes(model.channel) && <Button variant="ghost"
                   disabled={visibilitySaving || model.hiddenByGroup === true}
@@ -237,24 +238,23 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
                   onClick={() => { const ids = summary.settings.hiddenModelIds ?? []; void saveVisibility({
                     hiddenModelIds: ids.includes(model.id) ? ids.filter(id => id !== model.id) : [...ids, model.id],
                   }) }}>{model.hiddenByUser ? <Eye size={16} /> : <EyeOff size={16} />}</Button>}
-                <Button variant="ghost" title={`复制 ${model.id}`} aria-label={`复制模型 ID：${model.id}`} onClick={() => copyModelId(model)}
+                <Button variant="ghost" title={tr("复制 {0}", model.id)} aria-label={tr("复制模型 ID：{0}", model.id)} onClick={() => copyModelId(model)}
                   className={copied === model.id ? 'md-copy-done' : ''}>
                   {copied === model.id ? <Check size={16} /> : <Copy size={16} />}
                 </Button>
-                <Button variant="outline" disabled={!!disabledReason} title={disabledReason || `测试 ${model.name}，会产生推理请求`}
-                  aria-label={`测试模型：${model.id}`} onClick={() => { void run('test', model) }}
+                <Button variant="outline" disabled={!!disabledReason} title={disabledReason || tr("测试 {0}，会产生推理请求", model.name)}
+                  aria-label={tr("测试模型：{0}", model.id)} onClick={() => { void run('test', model) }}
                   className={operation === 'test' && test?.model.id === model.id ? 'md-testing' : ''}>
-                  {operation === 'test' && test?.model.id === model.id ? <LoaderCircle size={14} className="spinning" /> : <Play size={14} />}测试
-                </Button>
+                  {operation === 'test' && test?.model.id === model.id ? <LoaderCircle size={14} className="spinning" /> : <Play size={14} />}{tr("测试")}</Button>
               </div>
             </div>
           })}
         </div>
       </div>
-    </div> : <div className="model-empty"><Boxes size={28} /><h2>{summary.catalog.length ? '没有匹配的模型' : '模型清单为空'}</h2>
-      <p>{summary.catalog.length ? '调整搜索条件或清空筛选。' : '刷新清单后重试，或检查渠道连接。'}</p>
-      {filtered && <Button variant="outline" onClick={() => changeFilters(initialFilters)}><SlidersHorizontal size={15} />清空筛选</Button>}
+    </div> : <div className="model-empty"><Boxes size={28} /><h2>{summary.catalog.length ? tr("没有匹配的模型") : tr("模型清单为空")}</h2>
+      <p>{summary.catalog.length ? tr("调整搜索条件或清空筛选。") : tr("刷新清单后重试，或检查渠道连接。")}</p>
+      {filtered && <Button variant="outline" onClick={() => changeFilters(initialFilters)}><SlidersHorizontal size={15} />{tr("清空筛选")}</Button>}
     </div>}
-    <p className="footnote">清单收录不代表实时可用。Kilo 免费池可能记录提示词，请勿发送敏感内容。</p>
+    <p className="footnote">{tr("清单收录不代表实时可用。Kilo 免费池可能记录提示词，请勿发送敏感内容。")}</p>
   </div>
 }

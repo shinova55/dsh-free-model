@@ -67,6 +67,7 @@ const suites = [
   ['standalone-management', 'standalone-management-test.mjs', []],
   ['standalone-lan', 'standalone-lan-test.mjs', []],
   ['standalone-frontend', 'standalone-frontend-test.mjs', []],
+  ['standalone-i18n', 'standalone-i18n-test.mjs', []],
   ['standalone-client-regression', 'standalone-client-regression-test.mjs', []],
   ['standalone-channels', 'standalone-channels-test.mjs', []],
   ['standalone-channel-filter', 'standalone-channel-filter-test.mjs', []],
