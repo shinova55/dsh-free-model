@@ -3,7 +3,7 @@
 
 # dsh-our-free-model
 
-[简体中文](README.md) | **English**
+**English** | [简体中文](README_ZH.md)
 
   <img alt="license" src="https://img.shields.io/badge/license-MIT-263146?style=flat-square">
   <img alt="zero dependencies" src="https://img.shields.io/badge/dependencies-zero-4b6fff?style=flat-square">
@@ -24,9 +24,6 @@
 > step of any kind. The frontier models are simply there, DeepSeek V4.1 Flash and
 > Kimi K3 among them. Completely free, with no usage cap.
 >
-> 你只需在 dsh 里装上这个插件，无需登录、注册、填 API Key 或任何其它操作，就能用上包括
-> DeepSeek V4.1 Flash、Kimi K3 在内的前沿模型——完全免费，不限量。
->
 > The roster follows upstream, availability is measured from **your own** network
 > egress, the thinking-effort control sends a real budget instead of a prompt hint, and
 > a local OpenAI-compatible forward port comes included.
@@ -42,7 +39,7 @@
 <div align="center">
   <img src="docs/images/qq-group-qr.png" alt="AI technical discussion QQ channel QR code" width="300">
   <br>
-  <b>QQ channel: pd90484671（ai技术交流学习）</b>
+  <b>QQ channel: pd90484671 (AI technical discussion and learning)</b>
   <br>
   Scan the QR code to join the channel, discuss the plugin, report issues and share tips.
 </div>
@@ -195,6 +192,37 @@ del "%DSH_HOME%\profiles\web\pnpm-lock.yaml"
 ```
 
 The accompanying `Ignoring broken lockfile` warnings disappear with the rebuild.
+
+## Standalone desktop: English and Chinese
+
+This fork includes an English/Chinese language selector for the standalone desktop console. Open **Service settings → Language / 语言** and choose **English** or **中文（简体）**. If the interface is currently in Chinese, open **服务设置** in the sidebar first.
+
+- The sidebar, overview, model list, usage dashboard, account channels, EAC, API connection, login screen, and service settings follow the selected language.
+- The console reloads when you change languages. It asks before discarding unsaved settings edits.
+- The choice is saved separately in the browser or desktop webview under `ofm-language` and survives normal application restarts. Chinese is the default until a choice is saved. A different browser profile or service port has its own preference.
+- Changing the language does not edit service settings, rotate API keys, or modify account credentials. User-provided names, model responses, and arbitrary upstream error messages remain unchanged.
+
+The native tray menu, native startup dialogs, and sponsor article/daily notice still use their original Chinese text. The sponsor navigation label and desktop window-control tooltips are localized.
+
+### Build the Windows desktop app
+
+Use Node.js 22.19+ on the 22.x line, or Node.js 24+, with npm. Building the Windows executable also requires the Rust MSVC toolchain, Visual Studio Build Tools with **Desktop development with C++**, and a Windows SDK. WebView2 Runtime is required to run the app.
+
+From the repository root:
+
+```powershell
+npm ci
+npm ci --prefix packages/standalone
+npm run typecheck:standalone
+npm run build:standalone-ui
+npm run test:contributor
+npm ci --prefix packages/desktop
+npm --prefix packages/desktop run build -- --bundles nsis
+```
+
+The installer is generated under `packages/desktop/src-tauri/target/release/bundle/nsis/`. Tauri stages the service and Node runtime automatically; the executable by itself is not a complete portable installation. The plugin's “no build step” description above applies to the dsh plugin, not to compiling the standalone desktop application.
+
+See the [Windows build and localization guide](docs/WINDOWS-LOCALIZATION.md) for browser tests, Node license handling, interface-only updates, backups, and rollback. Use assets built from the same version as the installed application, and keep your existing settings and credential directories intact.
 
 ## Desktop installers (macOS, community build)
 
