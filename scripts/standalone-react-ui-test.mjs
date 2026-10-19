@@ -24,6 +24,8 @@ const summary = () => ({ version: 'test', baseUrl, dataDir: 'isolated', networkM
 const errors = []
 try {
   const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] })
+  // The sponsor notice has its own UI suite; keep these page-flow tests deterministic.
+  await context.addInitScript(() => { const now = new Date(); localStorage.setItem('ofm.sponsor.last-shown.v1', now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0')) })
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await page.route('**/api/management/**', async route => {
