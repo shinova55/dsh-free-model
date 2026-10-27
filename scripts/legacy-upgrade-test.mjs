@@ -39,9 +39,10 @@ if (production) {
   assert(verifyManifestSignature(parseManifest(manifest), PINNED_MANIFEST_PUBLIC_KEY), '生产清单签名无效')
 } else manifest.signature = signManifest(parseManifest(manifest), keys.privateKey)
 const verifyKey = production ? PINNED_MANIFEST_PUBLIC_KEY : testKey
+// Pin commit objects, not annotated tag objects: fork checkouts may omit upstream tags.
 const old = [
-  { version: '1.3.1', revision: 'f14d261557ae98e5d28eaa33f4471302cc7f35ad' },
-  { version: '2.5.9', revision: '313eaa45c3abc769cd4169326b9b4e7161d141a9' },
+  { version: '1.3.1', revision: 'cb4e2c307ec73a09d97a8595d4f76416b0a1fc83' },
+  { version: '2.5.9', revision: '25ab765d6bb860779dbd8c53062953524f3cac09' },
 ]
 let requestCount = 0
 let tamperedPath = ''
@@ -62,6 +63,7 @@ const git = (...args) => execFileSync('git', args, { cwd: root, maxBuffer: 8 * 1
 let installed
 try {
   for (const historical of old) {
+    assert.equal(git('cat-file', '-t', historical.revision).toString().trim(), 'commit', 'Historical revisions must pin commits, not optional upstream tag objects')
     const fixture = fs.readFileSync(new URL(`./fixtures/updater-${historical.version}.mjs`, import.meta.url))
     assert.deepEqual(fixture, git('show', `${historical.revision}:src/updater.js`), '历史升级器夹具已被修改')
     historical.module = await import(`./fixtures/updater-${historical.version}.mjs`)
