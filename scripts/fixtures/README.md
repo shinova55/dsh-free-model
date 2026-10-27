@@ -1,0 +1,10 @@
+# 历史升级器回归夹具
+
+这两个文件完整复制 Git 中对应版本的 `src/updater.js`，保持原字节，不修改文件数量、单文件大小或签名限制。
+
+- `updater-1.3.1.mjs`：提交 `cb4e2c307ec73a09d97a8595d4f76416b0a1fc83`。
+- `updater-2.5.9.mjs`：提交 `25ab765d6bb860779dbd8c53062953524f3cac09`。
+
+沿用项目 MIT 许可证。测试同时核对夹具与历史 Git 对象一致；已安装包也从该提交的真实发布文件提取，不以新版代码伪装旧版。贡献者测试仅对支持注入测试公钥的 2.5.9 使用一次性签名；发布验证使用真实签名清单和原版公钥。
+
+Pinned revisions are commit objects, not annotated tag objects. Full-history fork checkouts include these commits even when upstream tags are absent.

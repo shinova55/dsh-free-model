@@ -75,5 +75,6 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           $assets = Get-ChildItem release-assets -File | ForEach-Object FullName
-          gh release create v2.5.5-en.1 @assets --target $env:GITHUB_SHA --title 'Our Free Model 2.5.5 — English/Chinese fork' --notes-file docs/releases/v2.5.5-en.1.md
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          gh release create "v$version-en.1" @assets --target $env:GITHUB_SHA --title "Our Free Model $version — English/Chinese fork" --notes-file release-assets/RELEASE-VERIFICATION.md
           if ($LASTEXITCODE) { exit $LASTEXITCODE }

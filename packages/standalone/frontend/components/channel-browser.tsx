@@ -38,7 +38,7 @@ export function ChannelBrowser({ rpc, summary }: { rpc: Rpc; summary: Summary & 
     void rpc('usage.autoCheckin', {}).then(value => {
       if (mounted.current) setAuto(value.autoCheckin)
     }).catch(() => {})
-    const timer = setInterval(() => { void reload() }, 45000)
+    const timer = setInterval(() => { if (!document.hidden) void reload() }, 45000)
     return () => { mounted.current = false; sequence.current++; clearInterval(timer) }
   }, [rpc, reload])
   useEffect(() => {
@@ -60,7 +60,7 @@ export function ChannelBrowser({ rpc, summary }: { rpc: Rpc; summary: Summary & 
     const status = statuses?.[provider.id]
     const isConnected = (status?.accounts?.enabled ?? 0) > 0 && !status?.closed
     return `${provider.name} ${provider.org}`.toLowerCase().includes(search.toLowerCase().trim())
-      && (filter === 'all' || (status !== undefined && (filter === 'connected' ? isConnected : !isConnected)))
+      && (filter === 'all' || (filter === 'connected' ? isConnected : !isConnected))
   })
   // 分类标签展示全量数量；搜索后的匹配数量由结果栏单独展示。
   const counts: Record<string, number> = {
@@ -68,7 +68,7 @@ export function ChannelBrowser({ rpc, summary }: { rpc: Rpc; summary: Summary & 
     connected,
     pending: providers.filter(provider => {
       const status = statuses?.[provider.id]
-      return status !== undefined && (status.closed || (status.accounts?.enabled ?? 0) <= 0)
+      return !status || status.closed || (status.accounts?.enabled ?? 0) <= 0
     }).length,
   }
   return <>
@@ -101,20 +101,20 @@ export function ChannelBrowser({ rpc, summary }: { rpc: Rpc; summary: Summary & 
         </div></div>
     </div> : <>
       <div className="channel-toolbar"><div className="channel-search"><Search size={17} /><Input aria-label={tr("搜索渠道")} placeholder={tr("搜索渠道或供应商…")} value={search} onChange={event => setSearch(event.target.value)} /></div>
-        <div className="channel-filters" aria-label={tr("渠道状态筛选")}>{[['all', tr("全部渠道")], ['connected', tr("已接入")], ['pending', tr("待接入")]].map(([id, label]) =>
+        <div className="channel-filters" aria-label={tr("渠道状态筛选")}>{[['all', tr("全部渠道")], ['connected', tr("已接入")], ['pending', tr("未连接")]].map(([id, label]) =>
           <button key={id} aria-pressed={filter === id} disabled={id !== 'all' && !statuses} onClick={() => setFilter(id)}>{label}<span>{id === 'all' || statuses ? counts[id] : '—'}</span></button>)}</div>
       </div>
       <div className="channel-results-meta"><span>{rows.length} {tr("个渠道")}</span><span><SlidersHorizontal size={13} />{tr("按供应商管理独立账号与额度")}</span></div>
       <div className="provider-grid">{rows.map(provider => {
         const status = statuses?.[provider.id]
-        const state = status === undefined ? tr("读取中") : status.closed ? tr("已关闭") : (status.accounts?.enabled ?? 0) > 0 ? tr("已接入") : tr("待接入")
-        return <Card className="provider-card" key={provider.id}>
-          <div className="provider-card-top"><span className="provider-logo" style={{ color: provider.accent, backgroundColor: `${provider.accent}0d` }}>{provider.name.slice(0, 2).toUpperCase()}</span>
-            <Badge tone={state === tr("已接入") ? 'success' : 'neutral'}>{state === tr("已接入") && <span className="status-dot" />}{state}</Badge></div>
-          <h2>{provider.name}</h2><div className="provider-org">{provider.org}</div><p className="provider-description">{provider.note}</p>
+        const state = status?.closed ? tr("已关闭") : (status?.accounts?.enabled ?? 0) > 0 ? tr("已接入") : tr("未连接")
+        return <Card className="provider-card channel-directory-row" key={provider.id}>
+          <span className="provider-logo" style={{ color: provider.accent, backgroundColor: `${provider.accent}0d` }}>{provider.name.slice(0, 2).toUpperCase()}</span>
+          <div className="channel-directory-name"><h2>{provider.name}</h2><div className="provider-org">{provider.org}</div><p className="provider-description">{provider.note}</p></div>
           <div className="provider-counts"><span>{tr("账号")}<strong>{status ? status.accounts?.total ?? 0 : '—'}</strong></span>
             <span>{tr("模型")}<strong>{status ? Math.max(0, (status.models?.total ?? 0) - (status.models?.disabled ?? 0)) : '—'}</strong></span></div>
-          <Button variant="outline" className="provider-manage" onClick={() => select(provider.id)}>{tr("管理渠道")}<ArrowRight size={14} /></Button>
+          <Badge tone={state === tr("已接入") ? 'success' : 'neutral'}>{state === tr("已接入") && <span className="status-dot" />}{state}</Badge>
+          <Button variant="outline" className="provider-manage" onClick={() => select(provider.id)}>{state === tr("已接入") ? tr("管理") : tr("连接")}<ArrowRight size={14} /></Button>
         </Card>
       })}</div>
       {rows.length === 0 && <Card className="channel-empty"><Search size={24} /><h2>{tr("没有匹配的渠道")}</h2><p>{tr("试试其他名称，或切换筛选条件。")}</p><Button variant="outline" onClick={() => { setSearch(''); setFilter('all') }}>{tr("重置筛选")}</Button></Card>}

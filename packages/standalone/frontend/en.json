@@ -394,5 +394,22 @@
   "获取令牌不接受路径或命令参数": "Token retrieval does not accept paths or command arguments.",
   "请确认轮换 API Key": "Confirm API Key rotation.",
   "项目支持": "Project support",
-  "来自赞助商的广告": "Sponsor advertisement"
+  "来自赞助商的广告": "Sponsor advertisement",
+  "自动探测可用性（已停用）": "Automatic availability probes (disabled)",
+  "自动探测已关闭：周期刷新只更新模型清单，不会发送探测请求。": "Automatic probes are disabled: scheduled refreshes only update the model list and do not send probe requests.",
+  "测试已成功，但结果未能保存；请检查数据目录权限或重新测试。": "The test succeeded, but the result could not be saved. Check data directory permissions or test again.",
+  "实测失败": "Test failed",
+  "实测可用": "Tested available",
+  "本机管理令牌": "Local management token",
+  "未连接": "Not connected",
+  "连接": "Connect",
+  "{0} 个供应商，独立账号池": "{0} providers with separate account pools",
+  "模型工作台": "Model workbench",
+  "客户端与订阅": "Clients and subscriptions",
+  "资源库": "Library",
+  "聚合渠道": "Aggregated providers",
+  "路由组": "Routing groups",
+  "应用更新": "Application updates",
+  "使用须知与免责声明": "Usage terms and disclaimer",
+  "目录收录": "Listed in catalog"
 }

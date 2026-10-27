@@ -1,5 +1,6 @@
 import { tr, locale } from '../i18n.mjs'
 import { useEffect, useRef, useState } from 'react'
+import { providers } from 'ofm-provider-list'
 import { Activity, ArrowRight, ArrowUpRight, Boxes, Check, CircleCheck, Copy, Handshake, Layers3, Network, RefreshCw, Terminal, Zap } from 'lucide-react'
 import { Badge, Button, Card } from './ui'
 import '../usage.css'
@@ -31,7 +32,7 @@ export function Overview({ summary, stats, host }: Snapshot & { host: Host }) {
   const failures = [...stats.samples].reverse().filter(row => row.ok === false).slice(0, 4)
   const sources = [
     { name: tr("匿名与 Kilo"), sub: tr("无需账号的免费模型"), icon: Zap, count: summary.catalog.filter(row => row.channel === 'anonymous' || row.channel === 'kilo').length, page: 'models' as const },
-    { name: tr("免费账号渠道"), sub: tr("13 个供应商，独立账号池"), icon: Network, count: summary.catalog.filter(row => !['anonymous', 'kilo', 'eac'].includes(row.channel)).length, page: 'channels' as const },
+    { name: 'EAC router', sub: tr("{0} 个供应商，独立账号池", providers.length), icon: Network, count: summary.catalog.filter(row => !['anonymous', 'kilo', 'eac'].includes(row.channel)).length, page: 'channels' as const },
     { name: tr("EAC 协付渠道"), sub: summary.eacAuth?.local ? tr("已保存本机授权") : tr("尚未保存本机授权"), icon: Handshake, count: summary.catalog.filter(row => row.channel === 'eac').length, page: 'eac' as const },
   ]
 

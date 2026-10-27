@@ -34,6 +34,7 @@ try {
     const answer = (value, status = 200) => route.fulfill({ status, json: value })
     if (endpoint === '/session') { loggedIn = body.key === key || body.bootstrapToken === 'test'; return answer(loggedIn ? { ok: true } : { error: '登录令牌无效' }, loggedIn ? 200 : 401) }
     if (!loggedIn) return answer({ error: '管理会话已失效，请重新登录' }, 401)
+    if (endpoint === '/disclaimer') return answer({ acknowledged: true })
     if (endpoint === '/summary') { summaryReads++; return answer(summary()) }
     if (endpoint === '/stats') return answer(buildStats({}, []))
     if (endpoint === '/settings') { Object.assign(settings, body); return answer({ settings }) }
