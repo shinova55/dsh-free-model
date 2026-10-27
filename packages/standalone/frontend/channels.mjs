@@ -31,10 +31,10 @@ async function rpc(method, payload = {}) {
   if (!result.ok) throw new Error(result.error?.message ?? tr("渠道操作失败"))
   return result.value
 }
-const lockedProviders = new Set(['buddy', 'workbuddy', 'loomy'])
+const lockedProviders = new Set(['loomy'])
 
 function ChannelTools({ summary }) {
-  const [provider, setProvider] = React.useState('buddy')
+  const [provider, setProvider] = React.useState('lobsterai')
   const [status, setStatus] = React.useState()
   const [lock, setLock] = React.useState()
   const [busy, setBusy] = React.useState(false)
@@ -119,7 +119,7 @@ function ChannelConsole({ summary }) {
   return h(React.Fragment, null,
     h('header', { className: 'dashboard-heading' },
       h('div', null, h('div', { className: 'heading-eyebrow' }, 'WORKSPACE / CHANNELS'),
-        h('h1', null, tr("免费账号渠道")), h('p', null, tr("连接你的账号，把各家的免费额度汇集到一个 API。")))),
+        h('h1', null, 'EAC router'), h('p', null, tr("连接你的账号，把各家的免费额度汇集到一个 API。")))),
     h('div', { className: 'ofm_seg', role: 'tablist', 'aria-label': tr("渠道管理页面") },
       [['accounts', tr("登录与账号池")], ['ledger', tr("渠道用量")], ['logs', tr("请求日志")], ['tools', tr("供应商与备份")]].map(([id, name]) =>
         h('button', { key: id, role: 'tab', 'aria-selected': page === id, onClick: () => setPage(id) }, name))),
