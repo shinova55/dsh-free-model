@@ -52,6 +52,10 @@ const listen = () => new Promise((resolve, reject) => {
   server.once('error', reject)
   server.listen(0, '127.0.0.1', () => resolve(`http://127.0.0.1:${server.address().port}`))
 })
+// Descriptions may discuss other apps without offering their account channels.
+const listingIdentity = ({ package: spec, name, providers }) => ({ package: spec, name, providers })
+const listingIdentities = listings => listings.map(listingIdentity)
+const repoIdentity = ({ package: name, spec, repo }) => ({ package: name, spec, repo })
 const mentions = value => JSON.stringify(value).toLowerCase().includes('workbuddy')
 const denied = async (method, route, body) => {
   try {
@@ -85,10 +89,10 @@ try {
 
   await engineCheck('the plugin market no longer offers the channel', async () => {
     const listings = await read('api/plugins/listings')
-    assert(!mentions(listings.listings), 'listings must not name the channel')
+    assert(!mentions(listingIdentities(listings.listings)), 'listings must not offer the channel')
     assert(listings.listings.length > 5, 'other listings stay')
     const market = await read('api/plugins/market')
-    assert(!mentions(market.listings), 'market listings must not name the channel')
+    assert(!mentions(listingIdentities(market.listings)), 'market listings must not offer the channel')
     assert(market.listings.length > 5, 'other market listings stay')
     assert(Array.isArray(market.state.plugins), 'market state stays intact')
   })
@@ -107,7 +111,10 @@ try {
   await engineCheck('installed-plugin and update listings stay clean', async () => {
     for (const route of ['api/plugins', 'api/plugins/updates', 'api/plugin-pages', 'api/plugin-panels',
       'api/plugins/github', 'api/usage/quotas', 'api/login/usage']) {
-      assert(!mentions(await read(route)), route)
+      const answer = await read(route)
+      // Discovery descriptions are mutable prose, not the identities matched by policy.
+      const identities = route === 'api/plugins/github' ? answer.repos.map(repoIdentity) : answer
+      assert(!mentions(identities), route)
     }
     const checked = await (await post('api/plugins/check', {})).json()
     assert(!mentions(checked), 'a version check must not name the channel')
@@ -144,6 +151,7 @@ try {
       'api/login/usage', 'api/usage/quotas']
     for (const route of actionable) {
       const answer = await read(route)
+      if (Array.isArray(answer.listings)) answer.listings = listingIdentities(answer.listings)
       assert(!spellings.test(JSON.stringify(answer)), `${route} must not name an excluded channel`)
     }
     // /api/providers keeps the engine's own deprecation list whole. That list is
@@ -278,8 +286,20 @@ try {
       { package: PACKAGE, name: 'WorkBuddy', providers: IDS },
       { package: '@magpie-community/opencode-zcode-auth', name: 'ZCode', providers: ['zcode'] },
     ] }
+    const unrelatedPage = { package: '@magpie-community/page-agent-office', name: 'Agent Office',
+      kind: 'page', summary: { en: 'Displays local WorkBuddy and CodeBuddy session files.' } }
+    listings.listings.push(unrelatedPage)
     const filtered = filterEngineJSON('/api/plugins/listings', structuredClone(listings))
-    assert.deepEqual(filtered.listings.map(row => row.package), ['@magpie-community/opencode-zcode-auth'])
+    assert.deepEqual(filtered.listings.map(row => row.package), ['@magpie-community/opencode-zcode-auth', unrelatedPage.package])
+    assert.deepEqual(filtered.listings[1], unrelatedPage, 'an unrelated page description is not a channel offer')
+    assert(!mentions(listingIdentities(filtered.listings)), 'remaining listing identities offer no excluded channel')
+    const allowedRepo = { package: 'session-viewer', spec: 'github:example/session-viewer',
+      repo: 'example/session-viewer', description: 'Displays WorkBuddy session files.' }
+    const github = filterEngineJSON('/api/plugins/github', { repos: [
+      { package: PACKAGE }, { spec: 'github:example/workbuddy-auth' },
+      { repo: 'example/codebuddy-auth' }, allowedRepo,
+    ] })
+    assert.deepEqual(github.repos, [allowedRepo], 'GitHub discovery filters package, spec and repo identities')
     const unknown = { anything: 1 }
     assert.equal(filterEngineJSON('/api/settings', unknown), unknown, 'other routes pass through')
     assert.throws(() => assertEngineMutation('POST', '/api/plugins/add', { spec: PACKAGE }), /not offered/)
