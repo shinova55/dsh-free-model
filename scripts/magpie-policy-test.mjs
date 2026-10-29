@@ -110,7 +110,8 @@ try {
   await engineCheck('installed-plugin and update listings stay clean', async () => {
     for (const route of ['api/plugins', 'api/plugins/updates', 'api/plugin-pages', 'api/plugin-panels',
       'api/plugins/github', 'api/usage/quotas', 'api/login/usage']) {
-      assert(!mentions(await read(route)), route)
+      const answer = await read(route)
+      assert(!mentions(answer), `${route}: ${JSON.stringify(answer)}`)
     }
     const checked = await (await post('api/plugins/check', {})).json()
     assert(!mentions(checked), 'a version check must not name the channel')
