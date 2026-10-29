@@ -1,6 +1,9 @@
 name: Windows fork release
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - release/v2.7.2-en.1
 permissions:
   contents: write
 concurrency:
