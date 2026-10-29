@@ -46,7 +46,11 @@ try {
     if (endpoint === '/channels/rpc') {
       const value = body.method === 'provider.status' ? { statuses: Object.fromEntries(body.payload.providers.map(id => [id, { accounts: { total: 0, enabled: 0 } }])) }
         : body.method === 'usage.autoCheckin' ? { autoCheckin: { enabled: false } }
-          : body.method === 'usage.tokenLedger' ? { entries: [] } : {}
+          : body.method === 'usage.tokenLedger' ? { entries: [], channels: [], requests: [] }
+          : body.method === 'usage.tokenLedgerHistory' ? { days: [] }
+          : body.method === 'account.list' ? { accounts: [] }
+          : body.method === 'model.list' ? { models: [] }
+          : body.method === 'credits.balances' ? { balances: [] } : {}
       return answer({ ok: true, value })
     }
     return answer({ ok: true })
@@ -79,7 +83,7 @@ try {
   page.once('dialog', dialog => dialog.accept())
   await page.getByRole('button', { name: '轮换密钥', exact: true }).click()
   await page.waitForFunction(() => document.getElementById('connection-key').value === 'ofm-ui-rotated-key')
-  await nav('免费账号渠道'); await page.getByLabel('搜索渠道').waitFor()
+  await nav('EAC router'); await page.getByLabel('搜索渠道').waitFor()
   await page.getByRole('tab', { name: '请求日志', exact: true }).click()
   // 等待轮询真实执行；刷新不应重置渠道子页。
   const previousReads = summaryReads

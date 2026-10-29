@@ -49,8 +49,6 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node scripts/build-manifest.mjs --check
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node scripts/test-all.mjs --mode contributor
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Browser regressions and screenshots
         run: |
           $env:OFM_PLAYWRIGHT_MODULE = Join-Path $PWD '.verify/browser/node_modules/playwright'
@@ -59,6 +57,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node scripts/standalone-i18n-browser-test.mjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Contributor regressions
+        run: node scripts/test-all.mjs --mode contributor
       - name: Build Windows x64 installer
         run: |
           npm --prefix packages/desktop run build -- --bundles nsis
