@@ -85,7 +85,7 @@ try {
 
   await engineCheck('the plugin market no longer offers the channel', async () => {
     const listings = await read('api/plugins/listings')
-    assert(!mentions(listings.listings), 'listings must not name the channel')
+    assert(!mentions(listings.listings), `listings must not name the channel: ${JSON.stringify(listings.listings.filter(mentions))}`)
     assert(listings.listings.length > 5, 'other listings stay')
     const market = await read('api/plugins/market')
     assert(!mentions(market.listings), 'market listings must not name the channel')
