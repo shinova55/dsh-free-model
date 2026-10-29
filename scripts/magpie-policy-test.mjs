@@ -55,6 +55,7 @@ const listen = () => new Promise((resolve, reject) => {
 // Descriptions may discuss other apps without offering their account channels.
 const listingIdentity = ({ package: spec, name, providers }) => ({ package: spec, name, providers })
 const listingIdentities = listings => listings.map(listingIdentity)
+const repoIdentity = ({ package: name, spec, repo }) => ({ package: name, spec, repo })
 const mentions = value => JSON.stringify(value).toLowerCase().includes('workbuddy')
 const denied = async (method, route, body) => {
   try {
@@ -111,7 +112,9 @@ try {
     for (const route of ['api/plugins', 'api/plugins/updates', 'api/plugin-pages', 'api/plugin-panels',
       'api/plugins/github', 'api/usage/quotas', 'api/login/usage']) {
       const answer = await read(route)
-      assert(!mentions(answer), `${route}: ${JSON.stringify(answer)}`)
+      // Discovery descriptions are mutable prose, not the identities matched by policy.
+      const identities = route === 'api/plugins/github' ? answer.repos.map(repoIdentity) : answer
+      assert(!mentions(identities), route)
     }
     const checked = await (await post('api/plugins/check', {})).json()
     assert(!mentions(checked), 'a version check must not name the channel')
@@ -290,6 +293,13 @@ try {
     assert.deepEqual(filtered.listings.map(row => row.package), ['@magpie-community/opencode-zcode-auth', unrelatedPage.package])
     assert.deepEqual(filtered.listings[1], unrelatedPage, 'an unrelated page description is not a channel offer')
     assert(!mentions(listingIdentities(filtered.listings)), 'remaining listing identities offer no excluded channel')
+    const allowedRepo = { package: 'session-viewer', spec: 'github:example/session-viewer',
+      repo: 'example/session-viewer', description: 'Displays WorkBuddy session files.' }
+    const github = filterEngineJSON('/api/plugins/github', { repos: [
+      { package: PACKAGE }, { spec: 'github:example/workbuddy-auth' },
+      { repo: 'example/codebuddy-auth' }, allowedRepo,
+    ] })
+    assert.deepEqual(github.repos, [allowedRepo], 'GitHub discovery filters package, spec and repo identities')
     const unknown = { anything: 1 }
     assert.equal(filterEngineJSON('/api/settings', unknown), unknown, 'other routes pass through')
     assert.throws(() => assertEngineMutation('POST', '/api/plugins/add', { spec: PACKAGE }), /not offered/)
