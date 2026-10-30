@@ -26,6 +26,8 @@ try {
   const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] })
   // The sponsor notice has its own UI suite; keep these page-flow tests deterministic.
   await context.addInitScript(() => { const now = new Date(); localStorage.setItem('ofm.sponsor.last-shown.v1', now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0')) })
+  // Exercise desktop-only navigation without invoking native commands.
+  await context.addInitScript(() => { window.__TAURI__ = { core: { invoke: async () => undefined } } })
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await context.route('**/api/management/**', async route => {
@@ -35,6 +37,7 @@ try {
     if (endpoint === '/session') { loggedIn = body.key === key || body.bootstrapToken === 'test'; return answer(loggedIn ? { ok: true } : { error: '登录令牌无效' }, loggedIn ? 200 : 401) }
     if (!loggedIn) return answer({ error: '管理会话已失效，请重新登录' }, 401)
     if (endpoint === '/disclaimer') return answer({ acknowledged: true })
+    if (endpoint === '/desktop-update') return answer({ currentVersion: '2.7.1', supported: true, phase: 'idle', latest: null, available: false, checkedAt: null, received: 0, total: 0, error: '' })
     if (endpoint === '/workbench') return answer({ clients: [{ id: 'codex', name: 'Codex CLI', kind: 'cli', executable: '/fixture/codex', cwd: '', model: '', mode: 'gateway', installed: true }], accounts: [] })
     if (endpoint === '/subscriptions') return answer({ accounts: [{ id: 'fixture', label: 'Fixture account', provider: 'codex', enabled: true, models: ['fixture/model'], quota: { windows: [{ name: 'Weekly', kind: 'weekly', usedPercent: 25 }] } }] })
     if (endpoint === '/subscriptions/discover') return answer({ candidates: [{ provider: 'codex', label: 'Codex CLI', available: false }] })
