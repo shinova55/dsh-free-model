@@ -1,6 +1,9 @@
 name: Windows fork release
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - release/v2.7.2-en.2
 permissions:
   contents: write
 concurrency:
@@ -44,8 +47,6 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node scripts/build-manifest.mjs --check
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          node scripts/test-all.mjs --mode contributor
-          if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Browser regressions and screenshots
         run: |
           $env:OFM_PLAYWRIGHT_MODULE = Join-Path $PWD '.verify/browser/node_modules/playwright'
@@ -54,6 +55,8 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           node scripts/standalone-i18n-browser-test.mjs
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Contributor regressions
+        run: node scripts/test-all.mjs --mode contributor
       - name: Build Windows x64 installer
         run: |
           npm --prefix packages/desktop run build -- --bundles nsis
@@ -76,5 +79,5 @@ jobs:
         run: |
           $assets = Get-ChildItem release-assets -File | ForEach-Object FullName
           $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
-          gh release create "v$version-en.1" @assets --target $env:GITHUB_SHA --title "Our Free Model $version — English/Chinese fork" --notes-file release-assets/RELEASE-VERIFICATION.md
+          gh release create "v$version-en.2" @assets --target $env:GITHUB_SHA --title "Our Free Model $version — English UI fixes" --notes-file release-assets/RELEASE-VERIFICATION.md
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
