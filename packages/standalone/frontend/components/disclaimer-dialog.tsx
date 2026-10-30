@@ -1,3 +1,4 @@
+import { tr } from '../i18n.mjs'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { DISCLAIMER, DISCLAIMER_VERSION } from '../../../../src/disclaimer.js'
@@ -30,7 +31,7 @@ export function DisclaimerDialog({ open, onClose }: { open: boolean; onClose(): 
       await management('/disclaimer/ack', {})
       onClose()
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : '保存失败，请重试。')
+      setError(reason instanceof Error ? reason.message : tr("保存失败，请重试。"))
     } finally { setBusy(false) }
   }
   return createPortal(
@@ -38,23 +39,23 @@ export function DisclaimerDialog({ open, onClose }: { open: boolean; onClose(): 
       onCancel={event => { event.preventDefault(); if (!busy) void dismiss() }}>
       <header>
         <span className="ofm-disclaimer-eyebrow">OUR FREE MODEL</span>
-        <h2 id="ofm-disclaimer-title">{DISCLAIMER.title}</h2>
-        <p>{DISCLAIMER.subtitle}</p>
+        <h2 id="ofm-disclaimer-title">{tr(DISCLAIMER.title)}</h2>
+        <p>{tr(DISCLAIMER.subtitle)}</p>
       </header>
       <div className="ofm-disclaimer-body">
-        <p className="ofm-disclaimer-intro">{DISCLAIMER.intro}</p>
+        <p className="ofm-disclaimer-intro">{tr(DISCLAIMER.intro)}</p>
         {DISCLAIMER.sections.map((section: { id: string; heading: string; body: string }) => (
           <section key={section.id}>
-            <h3>{section.heading}</h3>
-            <p>{section.body}</p>
+            <h3>{tr(section.heading)}</h3>
+            <p>{tr(section.body)}</p>
           </section>
         ))}
       </div>
       <footer>
-        <span className="ofm-disclaimer-version">免责声明版本 v{DISCLAIMER_VERSION}</span>
+        <span className="ofm-disclaimer-version">{tr("免责声明版本 v")}{DISCLAIMER_VERSION}</span>
         {error && <span className="ofm-disclaimer-error" role="alert">{error}</span>}
         <button type="button" className="primary" disabled={busy} onClick={() => void dismiss()}>
-          {busy ? '保存中…' : DISCLAIMER.accept}
+          {busy ? tr("保存中…") : tr(DISCLAIMER.accept)}
         </button>
       </footer>
     </dialog>,
