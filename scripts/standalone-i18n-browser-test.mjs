@@ -26,6 +26,8 @@ try {
   const context = await browser.newContext({ permissions: ['clipboard-read', 'clipboard-write'] })
   // The sponsor notice has its own UI suite; keep these page-flow tests deterministic.
   await context.addInitScript(() => { const now = new Date(); localStorage.setItem('ofm.sponsor.last-shown.v1', now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-' + String(now.getDate()).padStart(2,'0')) })
+  // Exercise desktop-only navigation without invoking native commands.
+  await context.addInitScript(() => { window.__TAURI__ = { core: { invoke: async () => undefined } } })
   const page = await context.newPage()
   page.on('pageerror', error => errors.push(error.message))
   await context.route('**/api/management/**', async route => {
@@ -35,6 +37,15 @@ try {
     if (endpoint === '/session') { loggedIn = body.key === key || body.bootstrapToken === 'test'; return answer(loggedIn ? { ok: true } : { error: '登录令牌无效' }, loggedIn ? 200 : 401) }
     if (!loggedIn) return answer({ error: '管理会话已失效，请重新登录' }, 401)
     if (endpoint === '/disclaimer') return answer({ acknowledged: true })
+    if (endpoint === '/desktop-update') return answer({ currentVersion: '2.7.1', supported: true, phase: 'idle', latest: null, available: false, checkedAt: null, received: 0, total: 0, error: '' })
+    if (endpoint === '/workbench') return answer({ clients: [{ id: 'codex', name: 'Codex CLI', kind: 'cli', executable: '/fixture/codex', cwd: '', model: '', mode: 'gateway', installed: true }], accounts: [] })
+    if (endpoint === '/subscriptions') return answer({ accounts: [{ id: 'fixture', label: 'Fixture account', provider: 'codex', enabled: true, models: ['fixture/model'], quota: { windows: [{ name: 'Weekly', kind: 'weekly', usedPercent: 25 }] } }] })
+    if (endpoint === '/subscriptions/discover') return answer({ candidates: [{ provider: 'codex', label: 'Codex CLI', available: false }] })
+    if (endpoint === '/providers') return answer({ registry: [{ id: 'fixture', name: 'Fixture API', category: 'apikey', authKind: 'apiKey', format: 'openai-chat', baseUrl: 'https://example.com/v1', models: ['fixture/model'], modelCount: 1 }], configured: {} })
+    if (endpoint === '/routing') return answer({ combos: [], models: [{ id: 'fixture/model', name: 'Fixture model', channel: 'anonymous' }], strategies: ['fallback', 'round-robin', 'smart', 'usage', 'pace'] })
+    if (endpoint === '/library') return answer({ resources: [], profiles: [] })
+    if (endpoint === '/engine/start') return answer({ ok: true })
+    if (endpoint === '/engine/ui/') return route.fulfill({ contentType: 'text/html', body: `<html lang="${new URL(request.url()).searchParams.get('locale')}"><body>Embedded workbench fixture</body></html>` })
     if (endpoint === '/summary') { summaryReads++; return answer(summary()) }
     if (endpoint === '/stats') return answer(buildStats({}, []))
     if (endpoint === '/settings') { Object.assign(settings, body); return answer({ settings }) }
@@ -73,6 +84,38 @@ try {
     }
   }
   await page.setViewportSize({width:1280,height:900})
+  // New upstream pages must participate in the selected console language too.
+  const checkPage = async (name, heading) => {
+    await nav(name); await page.getByRole('heading', { name: heading, exact: true }).waitFor(); await assertEnglish()
+  }
+  const checkDialog = async () => { await page.locator('dialog[open]').waitFor(); await assertEnglish() }
+  const closeDialog = async () => { await page.locator('dialog[open]').getByRole('button', { name: 'Close', exact: true }).click() }
+  await checkPage('Clients and subscriptions', 'Clients and subscriptions')
+  await page.getByRole('button', { name: 'Codex CLI launch settings', exact: true }).click(); await assertEnglish()
+  await page.getByRole('button', { name: 'Import subscription', exact: true }).first().click(); await checkDialog()
+  for (const name of ['JSON credentials', 'JSON file', 'API Key']) {
+    await page.locator('dialog[open]').getByRole('button', { name, exact: true }).click(); await assertEnglish()
+  }
+  await closeDialog()
+  await page.getByRole('button', { name: 'Discover locally', exact: true }).click(); await assertEnglish()
+  await checkPage('Aggregated providers', 'Aggregated providers')
+  await page.getByRole('button', { name: 'Connect', exact: true }).click(); await checkDialog(); await closeDialog()
+  await checkPage('Routing groups', 'Model routing')
+  await page.getByRole('button', { name: 'New routing group', exact: true }).first().click(); await checkDialog()
+  for (const strategy of ['round-robin', 'smart', 'usage', 'pace']) { await page.getByLabel('Select strategy', { exact: true }).selectOption(strategy); await assertEnglish() }
+  await closeDialog()
+  await checkPage('Library', 'Library')
+  await page.getByRole('button', { name: 'New resource', exact: true }).first().click(); await checkDialog(); await closeDialog()
+  await page.getByRole('tab', { name: /Profiles/ }).click()
+  await page.getByRole('button', { name: 'Save current configuration', exact: true }).first().click(); await checkDialog(); await closeDialog()
+  await checkPage('Application updates', 'Application updates')
+  await checkPage('Model workbench', 'Model workbench')
+  const frame = page.locator('iframe.ws-frame'); await frame.waitFor()
+  assert.equal(new URL(await frame.getAttribute('src'), baseUrl).searchParams.get('locale'), 'en')
+  await page.frameLocator('iframe.ws-frame').getByText('Embedded workbench fixture').waitFor()
+  await checkPage('Sponsor advertisement', 'Sponsor advertisement')
+  await page.getByRole('button', { name: 'Usage notice and disclaimer', exact: true }).click(); await checkDialog()
+  await page.getByRole('button', { name: 'I have read and understood', exact: true }).click()
   await nav('EAC router'); await page.getByLabel('Search channels', {exact:true}).waitFor()
   await assertEnglish()
   for (const name of ['Channel usage','Request logs','Providers and backups']) {

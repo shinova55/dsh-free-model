@@ -1,3 +1,4 @@
+import { tr } from './i18n.mjs'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 function redact(value: string, body: unknown): string {
@@ -11,8 +12,8 @@ function redact(value: string, body: unknown): string {
     collect(record.credentials)
     collect(record.apiKey)
   }
-  return secrets.reduce((text, secret) => text.split(secret).join('[已隐藏]'), value)
-    .replace(/\b(?:sk-|AIza|Bearer\s+)[\w.-]{8,}/gi, '[已隐藏]')
+  return secrets.reduce((text, secret) => text.split(secret).join(tr("[已隐藏]")), value)
+    .replace(/\b(?:sk-|AIza|Bearer\s+)[\w.-]{8,}/gi, tr("[已隐藏]"))
 }
 
 export async function management<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
@@ -25,17 +26,17 @@ export async function management<T>(path: string, body?: unknown, signal?: Abort
     signal: signal ? AbortSignal.any([signal, AbortSignal.timeout(30000)]) : AbortSignal.timeout(30000),
   })
   if (response.status === 401) window.dispatchEvent(new CustomEvent('ofm:unauthorized'))
-  const value = await response.json().catch(() => { throw new Error(`服务返回了无效响应 (${response.status})`) })
+  const value = await response.json().catch(() => { throw new Error(tr("服务返回了无效响应 ({0})", response.status)) })
   if (!response.ok || value?.ok === false) {
     const reason = value?.error?.message ?? value?.error ?? value?.message
-    throw new Error(redact(typeof reason === 'string' ? reason : `请求失败 (${response.status})`, body))
+    throw new Error(redact(typeof reason === 'string' ? tr(reason) : tr("请求失败 ({0})", response.status), body))
   }
   return value as T
 }
 
 export const failureMessage = (error: unknown) => error instanceof Error
-  ? error.name === 'TimeoutError' ? '请求超时，请重试。' : error.message
-  : '操作失败，请重试。'
+  ? error.name === 'TimeoutError' ? tr("请求超时，请重试。") : tr(error.message)
+  : tr("操作失败，请重试。")
 
 export function useManagementResource<T>(path: string, active: boolean) {
   const [data, setData] = useState<T>()

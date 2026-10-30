@@ -235,7 +235,7 @@ export function Models({ summary, host, active }: { summary: Summary; host: Host
                 {manual && state !== 'available' && model.detail && <small title={model.detail}
                   style={{ maxWidth: '100%', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{model.detail}</small>}
                 {!model.routable && <small>{model.hiddenByUser ? visibility.hidden : tr("未公开")}</small>}
-                {model.ttftMs != null && <small>首响应 {number(model.ttftMs)} ms</small>}</div>
+                {model.ttftMs != null && <small>{tr("首响应 ")}{number(model.ttftMs)} ms</small>}</div>
               <div role="cell" className="model-row-actions">
                 {['anonymous', 'kilo', 'eac', 'aggregate', 'combo'].includes(model.channel) && <Button variant="ghost"
                   disabled={visibilitySaving || model.hiddenByGroup === true}
